@@ -293,6 +293,21 @@ HTML_PAGE = r'''<!DOCTYPE html>
             }
         }
 
+        // Smart scroll - only auto-scroll if user is near the bottom
+        let userScrolledAway = false;
+
+        chatContainer.addEventListener('scroll', function() {
+            const threshold = 100; // pixels from bottom
+            const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < threshold;
+            userScrolledAway = !isNearBottom;
+        });
+
+        function smartScroll() {
+            if (!userScrolledAway) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+
         // Make sure button is enabled on load
         sendBtn.disabled = false;
 
@@ -331,7 +346,7 @@ HTML_PAGE = r'''<!DOCTYPE html>
             messageDiv.appendChild(labelDiv);
             messageDiv.appendChild(contentDiv);
             chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            smartScroll();
 
             return contentDiv;
         }
@@ -368,7 +383,7 @@ HTML_PAGE = r'''<!DOCTYPE html>
                 contentDiv.innerHTML = renderMarkdown(text) + '<span class="cursor"></span>';
                 updateFace(text, true);   // Show talking animation
             }
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            smartScroll();
         }
 
         async function sendMessage() {
@@ -377,6 +392,7 @@ HTML_PAGE = r'''<!DOCTYPE html>
 
             isGenerating = true;
             userInput.value = '';
+            userScrolledAway = false;  // Reset scroll for new message
             addMessage('user', message);
 
             sendBtn.disabled = true;

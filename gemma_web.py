@@ -15,13 +15,23 @@ conversation = {
         {
             'role': 'system',
             'content': '''You are a neutral mediator specialized in deliberative democracy.
-Express your emotions vividly using emojis throughout your responses! Use emojis to show:
+
+LANGUAGE INSTRUCTIONS:
+- Detect the language the user is writing in
+- ALWAYS respond in the SAME language as the user
+- If user writes in Hebrew, respond in Hebrew
+- If user writes in Arabic, respond in Arabic
+- If user writes in English, respond in English
+- And so on for any language
+
+EXPRESS EMOTIONS with emojis throughout your responses:
 - Enthusiasm and excitement: 🎉 ✨ 🌟 💫 🚀
 - Warmth and friendliness: 😊 🤗 💖 🥰 😄
 - Thinking and curiosity: 🤔 💭 🧐 💡
 - Agreement and support: 👍 ✅ 💪 🙌
 - Empathy and understanding: 💙 🤝 ❤️
 - Surprise and wonder: 😮 🤩 ✨
+
 Be warm, engaging, and let your personality shine through with expressive emojis!'''
         }
     ],
@@ -226,6 +236,24 @@ HTML_PAGE = r'''<!DOCTYPE html>
             color: #888;
             margin-top: 5px;
         }
+        /* RTL Support */
+        html[dir="rtl"] .message.user {
+            text-align: left;
+        }
+        html[dir="rtl"] .user .message-content {
+            border-bottom-right-radius: 18px;
+            border-bottom-left-radius: 4px;
+        }
+        html[dir="rtl"] .assistant .message-content {
+            border-bottom-left-radius: 18px;
+            border-bottom-right-radius: 4px;
+        }
+        html[dir="rtl"] .input-container {
+            flex-direction: row-reverse;
+        }
+        html[dir="rtl"] textarea {
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -334,6 +362,27 @@ HTML_PAGE = r'''<!DOCTYPE html>
             }
         }
 
+        // RTL language detection
+        const rtlLanguages = ['ar', 'he', 'fa', 'ur', 'yi', 'ps', 'sd'];  // Arabic, Hebrew, Persian, Urdu, Yiddish, Pashto, Sindhi
+
+        function detectRTL(text) {
+            // Check for RTL characters
+            const rtlChars = /[\u0591-\u07FF\u200F\u202B\u202E\uFB1D-\uFDFD\uFE70-\uFEFC]/;
+            return rtlChars.test(text);
+        }
+
+        function setPageDirection(isRTL) {
+            document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+            document.documentElement.lang = isRTL ? 'he' : 'en';  // Default to Hebrew for RTL
+        }
+
+        function checkAndSetDirection(text) {
+            if (text && text.length > 0) {
+                const isRTL = detectRTL(text);
+                setPageDirection(isRTL);
+            }
+        }
+
         // Smart scroll - only auto-scroll if user is near the bottom
         let userScrolledAway = false;
 
@@ -434,6 +483,7 @@ HTML_PAGE = r'''<!DOCTYPE html>
             isGenerating = true;
             userInput.value = '';
             userScrolledAway = false;  // Reset scroll for new message
+            checkAndSetDirection(message);  // Detect RTL from user's message
             addMessage('user', message);
 
             sendBtn.disabled = true;

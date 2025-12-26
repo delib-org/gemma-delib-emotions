@@ -34,6 +34,7 @@ HTML_PAGE = r'''<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gemma 3 Chat</title>
+    <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
     <style>
         * {
             margin: 0;
@@ -197,14 +198,19 @@ HTML_PAGE = r'''<!DOCTYPE html>
             text-align: center;
             margin-bottom: 15px;
         }
-        .gemma-face .face {
-            font-size: 64px;
-            display: inline-block;
+        .gemma-face .face-container {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
             transition: transform 0.3s ease;
             animation: float 3s ease-in-out infinite;
         }
-        .gemma-face .face.talking {
-            animation: talk 0.3s ease-in-out infinite;
+        .gemma-face .face-container.talking {
+            animation: talk 0.5s ease-in-out infinite;
+        }
+        .gemma-face dotlottie-player {
+            width: 100%;
+            height: 100%;
         }
         @keyframes float {
             0%, 100% { transform: translateY(0); }
@@ -212,7 +218,7 @@ HTML_PAGE = r'''<!DOCTYPE html>
         }
         @keyframes talk {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.15); }
         }
         .gemma-face .mood-label {
             display: block;
@@ -227,7 +233,16 @@ HTML_PAGE = r'''<!DOCTYPE html>
         <h1>Chat with <span>Gemma 3</span></h1>
         <div class="model-badge"><span>gemma3n</span></div>
         <div class="gemma-face">
-            <span class="face" id="gemmaFace">😊</span>
+            <div class="face-container" id="faceContainer">
+                <dotlottie-player
+                    id="gemmaFace"
+                    src="https://assets-v2.lottiefiles.com/a/f3b0b5ec-117b-11ee-972f-3be90a2e9c1d/c8J2D8jStE.json"
+                    background="transparent"
+                    speed="1"
+                    loop
+                    autoplay>
+                </dotlottie-player>
+            </div>
             <span class="mood-label" id="moodLabel">friendly</span>
         </div>
         <div class="chat-container" id="chatContainer">
@@ -249,22 +264,41 @@ HTML_PAGE = r'''<!DOCTYPE html>
         const sendBtn = document.getElementById('sendBtn');
         const stopBtn = document.getElementById('stopBtn');
         const gemmaFace = document.getElementById('gemmaFace');
+        const faceContainer = document.getElementById('faceContainer');
         const moodLabel = document.getElementById('moodLabel');
         let isGenerating = false;
+        let currentMood = 'happy';
 
-        // Mood detection system
+        // Mood detection system with Lottie animations
         const moods = {
-            excited: { face: '🤩', keywords: ['excited', 'amazing', 'fantastic', 'wonderful', 'awesome', '🎉', '✨', '🚀', '🌟', 'thrilled'] },
-            happy: { face: '😊', keywords: ['happy', 'glad', 'great', 'good', 'nice', 'pleased', '😊', '😄', 'welcome', 'help'] },
-            loving: { face: '🥰', keywords: ['love', 'care', 'heart', '💖', '❤️', '💕', '🥰', 'sweet', 'dear', 'warmth', 'hug'] },
-            sad: { face: '😢', keywords: ['sad', 'sorry', 'tough', 'difficult', 'hard', '😔', '💙', 'down', 'crying', 'tears', 'hurt', 'pain', 'struggling'] },
-            concerned: { face: '😟', keywords: ['worried', 'concern', 'hope you', 'are you ok', 'take care'] },
-            thinking: { face: '🤔', keywords: ['think', 'consider', 'perhaps', 'maybe', 'wonder', '🤔', 'hmm', 'interesting', 'curious'] },
-            surprised: { face: '😮', keywords: ['wow', 'oh my', 'surprised', 'unexpected', '😮', '😲', 'really', 'goodness'] },
-            laughing: { face: '😄', keywords: ['haha', 'funny', 'laugh', 'joke', '😂', '🤣', 'hilarious'] },
-            empathetic: { face: '🤗', keywords: ['understand', 'support', '🤗', 'here for you', 'listen', 'brave', 'courage'] },
-            proud: { face: '😌', keywords: ['proud', 'accomplished', 'achieved', 'success', '💪', '🙌', 'well done'] },
-            neutral: { face: '😊', keywords: [] }
+            excited: {
+                url: 'https://assets-v2.lottiefiles.com/a/8d4471b6-117d-11ee-b8ae-93152d45025e/vOIb35HjcU.json',
+                keywords: ['excited', 'amazing', 'fantastic', 'wonderful', 'awesome', '🎉', '✨', '🚀', '🌟', 'thrilled', 'incredible']
+            },
+            happy: {
+                url: 'https://assets-v2.lottiefiles.com/a/f3b0b5ec-117b-11ee-972f-3be90a2e9c1d/c8J2D8jStE.json',
+                keywords: ['happy', 'glad', 'great', 'good', 'nice', 'pleased', '😊', '😄', 'welcome', 'help', 'yes']
+            },
+            loving: {
+                url: 'https://assets-v2.lottiefiles.com/a/8d46346a-117d-11ee-b8b0-1315d1a13fa8/IkfYWKUEKH.lottie',
+                keywords: ['love', 'care', 'heart', '💖', '❤️', '💕', '🥰', 'sweet', 'dear', 'warmth', 'adore']
+            },
+            sad: {
+                url: 'https://assets-v2.lottiefiles.com/a/04947956-1178-11ee-8536-23f40c4cf817/FTOAQWMo06.lottie',
+                keywords: ['sad', 'sorry', 'tough', 'difficult', 'hard', '😔', '💙', 'down', 'crying', 'tears', 'hurt', 'pain', 'struggling']
+            },
+            thinking: {
+                url: 'https://assets-v2.lottiefiles.com/a/b463a8ea-658a-11ef-bc36-e7b604592ce5/LPVAuedbfw.json',
+                keywords: ['think', 'consider', 'perhaps', 'maybe', 'wonder', '🤔', 'hmm', 'interesting', 'curious', 'question']
+            },
+            laughing: {
+                url: 'https://assets-v2.lottiefiles.com/a/441c1564-1166-11ee-95fa-47278216b194/jn5awGc53z.lottie',
+                keywords: ['haha', 'funny', 'laugh', 'joke', '😂', '🤣', 'hilarious', 'lol']
+            },
+            empathetic: {
+                url: 'https://assets-v2.lottiefiles.com/a/1bfaa37c-1178-11ee-acc9-835900b16d1a/tweLfHRxFd.lottie',
+                keywords: ['understand', 'support', '🤗', 'here for you', 'listen', 'brave', 'courage', 'hug']
+            }
         };
 
         function detectMood(text) {
@@ -284,12 +318,19 @@ HTML_PAGE = r'''<!DOCTYPE html>
 
         function updateFace(text, isTalking = false) {
             const mood = detectMood(text);
-            gemmaFace.textContent = moods[mood].face;
+
+            // Only change animation if mood changed
+            if (mood !== currentMood) {
+                currentMood = mood;
+                gemmaFace.load(moods[mood].url);
+            }
+
             moodLabel.textContent = mood;
+
             if (isTalking) {
-                gemmaFace.classList.add('talking');
+                faceContainer.classList.add('talking');
             } else {
-                gemmaFace.classList.remove('talking');
+                faceContainer.classList.remove('talking');
             }
         }
 
